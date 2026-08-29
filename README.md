@@ -194,6 +194,15 @@ public/media/          images and hero video
 
 ## Deploying
 
-Works on Vercel as-is. Add the same environment variables in the project
-settings. `NEXT_PUBLIC_SITE_URL` sets the canonical/sitemap host.
+Add the same environment variables in the hosting project's settings.
+`NEXT_PUBLIC_SITE_URL` sets the canonical/sitemap host.
+
+`NEXT_PUBLIC_*` values are normally inlined when `next build` runs, so a host
+that builds without them ships a bundle with an undefined Supabase URL and the
+admin fails with "Failed to fetch". To avoid depending on that, the admin
+layout is `force-dynamic` and reads the Supabase values from the **runtime**
+environment, handing them to the browser client. Setting the variables on the
+host and restarting is enough — no rebuild required.
+
+The public pages read Supabase server-side, so they pick up runtime values too.
 # communicationevents
