@@ -16,6 +16,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
+import { CreditLine } from "@/components/credit-line";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 import { Button, Card, Input } from "./ui";
 
@@ -78,7 +79,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-svh flex-col bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-3">
           <div className="flex items-center gap-3">
@@ -120,7 +121,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
           })}
         </nav>
       </header>
-      <main className="mx-auto max-w-7xl px-5 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-5 py-8">{children}</main>
+      <footer className="border-t border-border">
+        <CreditLine
+          credit
+          className="mx-auto max-w-7xl px-5 py-6 text-center text-xs text-muted-foreground"
+        />
+      </footer>
     </div>
   );
 }
@@ -169,7 +176,7 @@ function LoginForm() {
   const [error, setError] = useState("");
 
   return (
-    <div className="grid min-h-screen place-items-center bg-background px-5">
+    <div className="grid min-h-screen place-content-center justify-items-center bg-background px-5">
       <Card className="w-full max-w-sm">
         <h1 className="font-display text-2xl">Admin sign in</h1>
         <p className="mt-1 mb-6 text-sm text-muted-foreground">
@@ -208,6 +215,7 @@ function LoginForm() {
           </Button>
         </form>
       </Card>
+      <CreditLine credit className="mt-6 text-center text-xs text-muted-foreground" />
     </div>
   );
 }

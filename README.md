@@ -30,8 +30,8 @@ bundled seed content in `src/lib/seed-data.ts`.
    SUPABASE_SERVICE_ROLE_KEY=...
    ```
 
-4. Install the admin policies (`supabase/admin.sql`) the same way, then load
-   the starting content:
+4. Install the admin policies (`supabase/admin.sql`) and the media bucket
+   (`supabase/storage.sql`) the same way, then load the starting content:
 
    ```bash
    npm run seed
@@ -50,7 +50,7 @@ change, no rebuild.
 
 | Page | Manages |
 | --- | --- |
-| Site & Stats | the home-page counters, phone/email/address, hero + founder media, About copy |
+| Site & Stats | the home-page counters, phone/email/address, hero video + poster, founder photo, About copy |
 | Services | full CRUD, bullet points, icon, order, publish toggle |
 | Gallery | categories and the photos inside each one |
 | Clients | logos, website links, order |
@@ -59,6 +59,24 @@ change, no rebuild.
 
 Saved edits reach the public site within `CONTENT_REVALIDATE_SECONDS`. The
 **Publish now** button in the header flushes that cache immediately.
+
+### Uploading images and video
+
+Every image field in the admin has an **Upload file** button. Files go to the
+public `media` bucket in Supabase Storage and the field is filled with the
+resulting URL — no need to touch the repo. Covers the hero background video,
+hero poster, founder photo, service images, client logos and gallery photos.
+
+Limits: 100 MB per file; JPEG, PNG, WebP, AVIF, GIF, SVG, MP4, WebM. Run
+`supabase/storage.sql` once to create the bucket and its policies — public read,
+admin-only write.
+
+You can still paste a path (`/media/hero.jpg`, for files committed under
+`public/media`) or any external https URL into the same box.
+
+Note: replacing an image leaves the old file in the bucket. Storage rows can't
+be deleted with SQL — use the Storage browser in the Supabase dashboard to
+clear anything you no longer want.
 
 ### Admin access control
 
@@ -106,9 +124,9 @@ edit in Supabase appears within that window.
 ### Adding new images
 
 Local images live in `public/media` and are referenced as `/media/....`.
-For images added later, upload to **Supabase Storage** (make the bucket public)
-and paste the full `https://` URL into the `url` / `logo` / `image` column —
-`next.config.ts` already allows remote https images.
+Anything added later is uploaded straight from the admin panel into the
+Supabase Storage `media` bucket — `next.config.ts` already allows remote https
+images, so no rebuild is needed.
 
 ## Routes
 
@@ -138,7 +156,7 @@ src/
     (admin)/admin/     content manager (its own chrome, no nav/footer)
     api/               enquiries, content feed, revalidate
   components/site/     page sections (hero, gallery, contact, nav, footer…)
-  components/admin/    admin shell, auth gate, form primitives
+  components/admin/    admin shell, auth gate, media uploader, form primitives
   components/ui/       dialog + toaster primitives
   lib/
     content.ts         Supabase reads, caching, seed fallback
@@ -148,6 +166,7 @@ src/
 supabase/
   schema.sql           tables, indexes, public RLS policies
   admin.sql            admins table, is_admin(), write policies
+  storage.sql          public media bucket + admin-only upload policies
   seed.sql             generated starting rows
 scripts/
   seed.mjs             pushes seed-data.ts into Supabase
@@ -162,6 +181,16 @@ public/media/          images and hero video
   them back.
 - `SUPABASE_SERVICE_ROLE_KEY` is server-only (`src/lib/supabase/server.ts`
   imports `server-only`). Never reference it from a Client Component.
+
+## Performance notes
+
+- The hero loop is re-encoded to 1280px / CRF 30 / no audio track — 4.6 MB down
+  to 0.49 MB. If you replace it, run it through the same treatment:
+  `ffmpeg -i in.mp4 -vf "scale='min(1280,iw)':-2" -c:v libx264 -crf 30 -preset slow -movflags +faststart -an out.mp4`
+- The hero poster is the LCP element and loads with `priority`. The video is
+  only attached once the browser goes idle, and is skipped entirely for
+  `prefers-reduced-motion` or data-saver users.
+- Measured on the production build: LCP 1.67 s, CLS 0, ~1 MB transferred.
 
 ## Deploying
 

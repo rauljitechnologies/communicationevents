@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Mail, MapPin, Phone } from "lucide-react";
+import { CreditLine } from "@/components/credit-line";
 import { contactLinks } from "@/lib/content";
 import type { SiteSettings } from "@/lib/types";
 import { LOGO, navLinks } from "./nav-links";
@@ -24,7 +25,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
             three decades.
           </p>
         </div>
-        <div className="text-base">
+        <div className="min-w-0 text-base">
           <p className="eyebrow">Explore</p>
           <ul className="mt-4 space-y-2 text-muted-foreground">
             {navLinks.map((l) => (
@@ -36,16 +37,16 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
             ))}
           </ul>
         </div>
-        <div className="text-base">
+        <div className="min-w-0 text-base">
           <p className="eyebrow">Reach us</p>
           <ul className="mt-4 space-y-2 text-muted-foreground">
             <li className="flex items-start gap-2">
               <MapPin size={16} className="mt-1 shrink-0 text-primary" />
               <span>{contact.address}</span>
             </li>
-            <li className="flex items-start gap-2">
+            <li className="flex min-w-0 items-start gap-2">
               <Mail size={16} className="mt-1 shrink-0 text-primary" />
-              <a href={contact.emailHref} className="break-words hover:text-primary">
+              <a href={contact.emailHref} className="min-w-0 [overflow-wrap:anywhere] hover:text-primary">
                 {contact.email}
               </a>
             </li>
@@ -59,9 +60,7 @@ export function SiteFooter({ settings }: { settings: SiteSettings }) {
         </div>
       </div>
       <div className="gold-rule" />
-      <p className="px-5 py-6 text-center text-xs text-muted-foreground md:px-10">
-        © {new Date().getFullYear()} Communication &amp; Events. All rights reserved.
-      </p>
+      <CreditLine className="px-5 py-6 text-center text-xs text-muted-foreground md:px-10" />
     </footer>
   );
 }

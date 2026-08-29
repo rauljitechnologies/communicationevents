@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { motion, useScroll, useTransform } from "motion/react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDown } from "lucide-react";
 import type { Stat } from "@/lib/types";
 import { Counter } from "./counter";
@@ -16,6 +17,27 @@ export function Hero({
   stats: Stat[];
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [playVideo, setPlayVideo] = useState(false);
+
+  // The poster is the LCP element and paints immediately. The video is only
+  // attached once the browser is idle, so it never competes with first paint —
+  // and is skipped entirely for reduced-motion or data-saver users.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (conn?.saveData) return;
+
+    const start = () => setPlayVideo(true);
+    // `"requestIdleCallback" in window` would narrow window to never here,
+    // since the property is always on the Window type. Check the value instead.
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(start, { timeout: 2500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(start, 900);
+    return () => window.clearTimeout(t);
+  }, []);
+
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.25]);
   const yText = useTransform(scrollYProgress, [0, 1], [0, 180]);
@@ -26,15 +48,27 @@ export function Hero({
     <>
       <section ref={ref} className="on-dark relative h-svh overflow-hidden">
         <motion.div style={{ scale }} className="absolute inset-0">
-          <video
-            className="h-full w-full object-cover"
-            src={video}
-            poster={poster}
-            autoPlay
-            muted
-            loop
-            playsInline
+          <Image
+            src={poster}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
           />
+          {playVideo && (
+            <video
+              className="absolute inset-0 h-full w-full object-cover"
+              src={video}
+              poster={poster}
+              preload="auto"
+              autoPlay
+              muted
+              loop
+              playsInline
+              aria-hidden="true"
+            />
+          )}
           <motion.div
             style={{ opacity: veil }}
             className="absolute inset-0 bg-[var(--navy-deep)]"
@@ -58,21 +92,25 @@ export function Hero({
 
           <h1 className="mt-5 max-w-4xl text-[clamp(2.6rem,8vw,6rem)] leading-[0.95]">
             {["Creating", "Memorable", "Events"].map((word, i) => (
-              <motion.span
-                key={word}
-                className="block overflow-hidden"
-                initial={{ opacity: 0, y: "100%" }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 + i * 0.13, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              >
-                {word === "Events" ? <span className="text-gold-gradient">Events</span> : word}
-              </motion.span>
+              // The wrapper is the mask the word slides up behind. Its padding
+              // gives descenders (the "g" in Creating) room inside the clip box;
+              // the matching negative margin keeps the tight line spacing.
+              <span key={word} className="-mb-[0.3em] block overflow-hidden pb-[0.3em]">
+                <motion.span
+                  className="block"
+                  initial={{ opacity: 0, y: "100%" }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + i * 0.13, duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  {word === "Events" ? <span className="text-gold-gradient">Events</span> : word}
+                </motion.span>
+              </span>
             ))}
             <motion.span
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.95, duration: 1 }}
-              className="block text-[clamp(1.4rem,3.4vw,2.6rem)] font-light text-muted-foreground"
+              className="mt-[0.3em] block text-[clamp(1.4rem,3.4vw,2.6rem)] font-light text-muted-foreground"
             >
               Since 1994
             </motion.span>

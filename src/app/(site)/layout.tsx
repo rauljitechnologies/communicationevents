@@ -11,11 +11,13 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const settings = await getSettings();
 
   return (
-    <>
+    // min-h-svh + flex-1 keeps the footer at the bottom of the viewport even
+    // when a page is shorter than the screen, at every breakpoint.
+    <div className="flex min-h-svh flex-col">
       <ScrollProgressBar />
       <SiteNav />
-      {children}
+      <div className="flex-1">{children}</div>
       <SiteFooter settings={settings} />
-    </>
+    </div>
   );
 }
