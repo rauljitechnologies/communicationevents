@@ -17,7 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { CreditLine } from "@/components/credit-line";
-import { supabaseBrowser } from "@/lib/supabase/browser";
+import { browserConfigured, missingEnv, supabaseBrowser } from "@/lib/supabase/browser";
 import { Button, Card, Input } from "./ui";
 
 const NAV = [
@@ -44,6 +44,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // createClient throws on an empty URL, and hooks still run even when the
+    // render below short-circuits — so bail out before touching Supabase.
+    if (!browserConfigured) {
+      setReady(true);
+      return;
+    }
     const sb = supabaseBrowser();
     sb.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
@@ -56,6 +62,34 @@ export function AdminShell({ children }: { children: ReactNode }) {
     });
     return () => sub.subscription.unsubscribe();
   }, [checkAdmin]);
+
+  if (!browserConfigured) {
+    return (
+      <CenteredNote>
+        <p className="font-semibold text-foreground">Supabase isn&apos;t configured for this build.</p>
+        <p className="mt-3">
+          {missingEnv.length > 0 ? (
+            <>
+              Missing at build time:{" "}
+              {missingEnv.map((v, i) => (
+                <span key={v}>
+                  {i > 0 && ", "}
+                  <code className="rounded bg-muted px-1">{v}</code>
+                </span>
+              ))}
+            </>
+          ) : (
+            "The Supabase URL in this build is not a valid https:// address."
+          )}
+        </p>
+        <p className="mt-3">
+          These are baked in when <code className="rounded bg-muted px-1">next build</code> runs, so
+          adding them to the host afterwards is not enough — set them in the hosting project&apos;s
+          environment variables and then <strong>redeploy</strong>.
+        </p>
+      </CenteredNote>
+    );
+  }
 
   if (!ready) {
     return <CenteredNote>Checking your session…</CenteredNote>;
@@ -188,8 +222,14 @@ function LoginForm() {
             e.preventDefault();
             setBusy(true);
             setError("");
-            const { error } = await supabaseBrowser().auth.signInWithPassword({ email, password });
-            if (error) setError(error.message);
+            try {
+              const { error } = await supabaseBrowser().auth.signInWithPassword({ email, password });
+              if (error) setError(error.message);
+            } catch {
+              setError(
+                "Couldn't reach Supabase. This build is missing its NEXT_PUBLIC_SUPABASE_URL — redeploy with the environment variables set.",
+              );
+            }
             setBusy(false);
           }}
         >
