@@ -17,7 +17,11 @@ import {
   Users,
 } from "lucide-react";
 import { CreditLine } from "@/components/credit-line";
-import { browserConfigured, missingEnv, supabaseBrowser } from "@/lib/supabase/browser";
+import {
+  isSupabaseConfigured,
+  missingSupabaseEnv,
+  supabaseBrowser,
+} from "@/lib/supabase/browser";
 import { Button, Card, Input } from "./ui";
 
 const NAV = [
@@ -46,7 +50,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     // createClient throws on an empty URL, and hooks still run even when the
     // render below short-circuits — so bail out before touching Supabase.
-    if (!browserConfigured) {
+    if (!isSupabaseConfigured()) {
       setReady(true);
       return;
     }
@@ -63,15 +67,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, [checkAdmin]);
 
-  if (!browserConfigured) {
+  if (!isSupabaseConfigured()) {
     return (
       <CenteredNote>
-        <p className="font-semibold text-foreground">Supabase isn&apos;t configured for this build.</p>
+        <p className="font-semibold text-foreground">Supabase isn&apos;t configured.</p>
         <p className="mt-3">
-          {missingEnv.length > 0 ? (
+          {missingSupabaseEnv().length > 0 ? (
             <>
-              Missing at build time:{" "}
-              {missingEnv.map((v, i) => (
+              Missing:{" "}
+              {missingSupabaseEnv().map((v, i) => (
                 <span key={v}>
                   {i > 0 && ", "}
                   <code className="rounded bg-muted px-1">{v}</code>
@@ -79,13 +83,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
               ))}
             </>
           ) : (
-            "The Supabase URL in this build is not a valid https:// address."
+            "The configured Supabase URL is not a valid https:// address."
           )}
         </p>
         <p className="mt-3">
-          These are baked in when <code className="rounded bg-muted px-1">next build</code> runs, so
-          adding them to the host afterwards is not enough — set them in the hosting project&apos;s
-          environment variables and then <strong>redeploy</strong>.
+          Set them in your hosting project&apos;s environment variables and restart the app. The
+          admin reads them at request time, so a rebuild isn&apos;t required.
         </p>
       </CenteredNote>
     );
